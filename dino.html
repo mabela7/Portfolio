@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dino run clone</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quantico:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
+
+    <style>
+      body{
+        background-color:black;
+        color: cyan;
+      }
+
+      #container{
+        border:1px cyan solid;
+        width: 100%;
+        height:300px;
+        position: relative;
+        border-radius: 5px;
+      }
+
+      #score{
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        font-family: 'Orbitron';
+        font-size: 20px;
+      }
+
+      #name{
+        margin: 0;
+        margin-bottom: 10px;
+        font-family: Quantico ;
+      }
+
+      #dino{
+        box-sizing: border-box;
+        background: url('shopping-cart-solid.svg');
+        border: 2px solid ;
+        border-radius: 5px;
+        width: 35px;
+        height: 35px;
+        position: absolute;
+        bottom: 0px;
+        left: 10px;
+      }
+
+      #obstacle{
+        background: cyan;
+        border-radius: 50;
+        width: 35px;
+        height: 35px;
+        position: absolute;
+        bottom: 0px;
+        right: 0;
+      }
+
+      #jumper{
+        padding: 10px;
+        width: 100px;
+        height: 60px;
+        margin-top: 50px;
+        margin-left: 50%;
+        transform: translateX(-50%);
+        border-radius: 10px;
+        font-size: 30px;
+        border:0;
+        background: black;
+        color: cyan;
+        animation: shadd 1s linear infinite;
+        font-family: "Orbitron";
+      }
+
+      @keyframes shadd{
+        0%{
+          box-shadow: 2px 2px 2px cyan,-2px -2px 2px cyan;
+        }
+        50%{
+          box-shadow: 0px 0px 0px cyan,0px 0px 0px cyan;
+        }
+        100%{
+          box-shadow: 2px 2px 2px cyan,-2px -2px 2px cyan;
+        }
+      }
+
+      @media(min-width:769px){
+        #container{
+          height: 80%;
+          width: 200px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1 id="name">Dino Clone</h1>
+
+    <div id="container">
+      <div id="score">score 0</div>
+      <div id="dino"></div>
+      <div id="obstacle"></div>
+    </div>
+
+    <button id="jumper">jump</button>
+
+    <script>
+      const dino = document.getElementById('dino');
+      const score = document.getElementById('score');
+      const jumper = document.getElementById('jumper');
+      const obstacle = document.getElementById('obstacle');
+      const container = document.getElementById('container');
+
+      let count = 0;
+      let isJumping = false;
+      let gameOverState = false;
+
+      let started = false;
+
+      let speed = 5;
+
+      let obstacles = [obstacle];
+
+      const obstacle2 = obstacle.cloneNode(true);
+      container.appendChild(obstacle2);
+      obstacle2.style.left = "-999px";
+      obstacles.push(obstacle2);
+
+      
+      setInterval(() => {
+
+        if (!started || gameOverState) return;
+
+        count++;
+        score.textContent = "score " + count;
+
+        speed = 5 + Math.floor(count / 300);
+
+        if (count > 1200) {
+          obstacle2.style.display = "block";
+        }
+
+      }, 100);
+
+      
+      dino.style.transition = "bottom 0.25s ease";
+
+      jumper.onclick = function () {
+
+        if (gameOverState) return;
+
+        if (!started) started = true;
+
+        isJumping = true;
+
+        dino.style.bottom = "170px";
+
+        setTimeout(() => {
+          dino.style.bottom = "0px";
+
+          setTimeout(() => {
+            isJumping = false;
+          }, 250);
+
+        }, 390);
+      };
+
+    
+      function spawn(ob) {
+
+        let x = container.offsetWidth + Math.random() * 400;
+
+        function move() {
+
+          if (gameOverState) return;
+
+          if (started) {
+            x -= speed;
+          }
+
+          ob.style.left = x + "px";
+
+          if (x < -50) {
+            x = container.offsetWidth + Math.random() * 300;
+          }
+
+          requestAnimationFrame(move);
+        }
+
+        move();
+      }
+
+      spawn(obstacle);
+      spawn(obstacle2);
+
+      // COLLISION
+      setInterval(() => {
+
+        if (!started || gameOverState) return;
+
+        const dinoRect = dino.getBoundingClientRect();
+
+        for (let ob of obstacles) {
+
+          const r = ob.getBoundingClientRect();
+
+          if (
+            dinoRect.right > r.left &&
+            dinoRect.left < r.right &&
+            dinoRect.bottom > r.top &&
+            dinoRect.top < r.bottom
+          ) {
+            gameOver();
+          }
+        }
+
+      }, 10);
+
+      function gameOver() {
+        gameOverState = true;
+        alert("Game Over Score: " + count);
+        location.reload();
+      }
+    </script>
+  </body>
+</html>
