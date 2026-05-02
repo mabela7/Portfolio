@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    :root {
+      --nav-height: 80px;
+      --genre-height: 80px;
+    }
+
+    body {
+      background:#0A0A0A;
+      margin: 0;
+      font-family: Arial;
+    }
+
+    .nav {
+      width: 100%;
+      height: var(--nav-height);
+      background: black;
+      position: fixed;
+      top: 0;
+      z-index: 10;
+    }
+
+    .search {
+      width: 60px;
+      height: 60px;
+      background: #18181B;
+      border-radius: 50%;
+      position: fixed;
+      top: 10px;
+      right: 18px;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      transition: width 0.5s ease, border-radius 0.5s ease;
+      z-index: 11;
+    }
+
+    .search:hover {
+      width:90%;
+      border-radius: 60px;
+    }
+
+    .search svg {
+      margin-left: 18px;
+    }
+
+    #searchInp {
+      border: none;
+      outline: none;
+      background: transparent;
+      color: white;
+      width: 0;
+      opacity: 0;
+      margin-left: 10px;
+      transition: 0.3s;
+    }
+
+    .search:hover #searchInp {
+      width: 100%;
+      opacity: 1;
+    }
+
+    .container {
+  position: fixed;
+  top: var(--nav-height);
+  width: 100%;
+  display: flex;
+  justify-content: center;   /* ✅ centers items */
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  overflow-x: auto;
+  white-space: nowrap;
+  z-index: 9;
+}
+
+    .container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .genre {
+      background: #18181B;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 20px;
+      flex: 0 0 auto;
+      cursor: pointer;
+    }
+
+    .genre.active {
+      background: #3B82F6;
+    }
+.feed {
+  padding-top: calc(var(--nav-height) + var(--genre-height) + 20px);
+  padding-left: 16px;
+  padding-right: 16px;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 30px;
+
+  justify-content: center; /* ✅ centers grid content */
+  max-width: 1200px;       /* keeps layout centered */
+  margin: 0 auto;          /* true centering */
+}
+
+    .card {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .card img {
+      width: 100%;
+      height: 240px;
+      object-fit: cover;
+    }
+
+    .info {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+    }
+
+    .info h4 {
+      margin: 0;
+      font-size: 14px;
+      color: white;
+    }
+
+    .info p {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: #aaa;
+    }
+
+   
+
+  </style>
+</head>
+
+<body>
+
+<div class="nav"></div>
+
+<div class="search">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+    <circle cx="11" cy="11" r="8" stroke="white" fill="none"></circle>
+    <path d="m21 21-4.34-4.34" stroke="white"></path>
+  </svg>
+  <input type="text" id="searchInp" placeholder="search for books">
+</div>
+
+<div class="container">
+  <button class="genre active" data-genre="all">All</button>
+  <button class="genre" data-genre="Thriller">Thriller</button>
+  <button class="genre" data-genre="Fantasy">Fantasy</button>
+  <button class="genre" data-genre="SciFi">Sci-Fi</button>
+  <button class="genre" data-genre="Horror">Horror</button>
+  <button class="genre" data-genre="Romance">Romance</button>
+    <button class="genre" data-genre="Mystery">mystery</button>
+</div>
+
+<div class="feed"></div>
+
+<script type="module">
+
+import { app } from "./Firebase.js";
+
+import {
+  getDatabase,
+  ref,
+  set,
+  get,
+  onValue
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const db = getDatabase(app);
+
+const feed = document.querySelector(".feed");
+const searchInp = document.getElementById("searchInp");
+const buttons = document.querySelectorAll(".genre");
+
+let books = [];
+let currentGenre = "all";
+
+onValue(ref(db, "Books"), (snapshot) => {
+
+  books = [];
+
+  snapshot.forEach(genreSnap => {
+    const genre = genreSnap.key;
+
+    genreSnap.forEach(bookSnap => {
+      const data = bookSnap.val();
+
+      books.push({
+        title: data.BookName,
+        author: data.Author,
+        image: data.image,
+        genre: genre
+      });
+    });
+  });
+
+  render();
+});
+
+function render() {
+  feed.innerHTML = "";
+
+  const text = searchInp.value.toLowerCase().trim();
+
+  books
+    .filter(b => {
+
+      const matchSearch =
+        text === "" || b.title.toLowerCase().includes(text);
+
+      const matchGenre =
+        currentGenre === "all" || b.genre === currentGenre;
+
+      if (text !== "") return matchSearch;
+
+      return matchGenre;
+    })
+    .forEach(b => {
+
+      const card = document.createElement("div");
+      card.className = "card";
+
+      card.innerHTML = `
+        <img src="${b.image}">
+        <div class="info">
+          <h4>${b.title}</h4>
+          <p>${b.genre}</p>
+        </div>
+      `;
+
+      feed.appendChild(card);
+    });
+}
+
+
+searchInp.addEventListener("input", render);
+
+searchInp.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    render();
+  }
+});
+
+buttons.forEach(btn => {
+  btn.addEventListener("click", () => {
+
+    buttons.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    currentGenre = btn.dataset.genre;
+    render();
+  });
+});
+
+</script>
+</body>
+</html>
